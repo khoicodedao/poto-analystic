@@ -27,9 +27,12 @@
     <title>CanvasJS Column Chart</title>
   </head>
   <body>
+    <!-- Date time selector -->
     <div class="flex justify-end">
       <div id="date"></div>
     </div>
+    <!-- =================== -->
+    <!-- Chart -->
     <div class="flex">
       <!-- First Column -->
       <div class="w-1/2 p-4">
@@ -46,9 +49,13 @@
       </div>
     </div>
 
+    <div class="flex">
+      <div id="treeBox"></div>
+    </div>
+    <!-- =================== -->
+
     <script>
       const now = new Date();
-
       $("#date").dxDateBox({
         type: "date",
         value: now,
@@ -156,6 +163,33 @@
           })
           .catch((error) => console.error("Error fetching data:", error));
       });
+    </script>
+
+    <!-- show all courses -->
+    <script>
+      function CourseBox(data) {
+        $("#treeBox").dxSelectBox({
+          inputAttr: { "aria-label": "Product ID" },
+          dataSource: new DevExpress.data.ArrayStore({
+            data: data,
+            key: "course_id",
+          }),
+          displayExpr: "post_title",
+          valueExpr: "course_id",
+          // value: products[0].ID,
+          onValueChanged(data) {
+            $(".current-value > span").text(data.value);
+            DevExpress.ui.notify(`The value is changed to: "${data.value}"`);
+          },
+        });
+      }
+
+      fetch(`https://poto.edu.vn/wp-json/custom/v1/get_list_course`)
+        .then((response) => response.json())
+        .then((data) => {
+          CourseBox(data);
+        })
+        .catch((error) => console.error("Error fetching data:", error));
     </script>
   </body>
 </html>
