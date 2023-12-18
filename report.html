@@ -28,6 +28,7 @@
   </head>
   <body>
     <!-- Date time selector -->
+    <h2 class="text-4xl font-bold mb-4 block">I. LEARNING TIME</h2>
     <div class="flex justify-end">
       <div id="date"></div>
     </div>
@@ -49,11 +50,16 @@
       </div>
     </div>
 
+    <h2 class="text-4xl font-bold mb-4">II. PASSING RATE</h2>
     <div class="flex">
       <div id="treeBox"></div>
     </div>
+    <div class="flex">
+      <div id="pie"></div>
+    </div>
     <!-- =================== -->
 
+    <!-- Show chart analyst time to learn English course -->
     <script>
       const now = new Date();
       $("#date").dxDateBox({
@@ -164,9 +170,11 @@
           .catch((error) => console.error("Error fetching data:", error));
       });
     </script>
+    <!-- =================== -->
 
     <!-- show all courses -->
     <script>
+      // show course in selected box
       function CourseBox(data) {
         $("#treeBox").dxSelectBox({
           inputAttr: { "aria-label": "Product ID" },
@@ -178,18 +186,106 @@
           valueExpr: "course_id",
           // value: products[0].ID,
           onValueChanged(data) {
-            $(".current-value > span").text(data.value);
-            DevExpress.ui.notify(`The value is changed to: "${data.value}"`);
+            CourseResult(data.value);
           },
         });
       }
 
+      //===fetch api call to function.php==
       fetch(`https://poto.edu.vn/wp-json/custom/v1/get_list_course`)
         .then((response) => response.json())
         .then((data) => {
           CourseBox(data);
         })
         .catch((error) => console.error("Error fetching data:", error));
+      //====================================
+
+      //=========Get api list course result=============
+
+      //===fetch api call to function.php==
+
+      async function CourseResult(course_id) {
+        fetch(
+          `https://poto.edu.vn/wp-json/custom/v1/get_list_result_course?course_id=${course_id}`
+        )
+          .then((response) => response.json())
+          .then((data) => {
+            data = data.filter(
+              (item) => item.total_marks != null && item.earned_marks != null
+            );
+            if (data.length > 0) {
+              let passCount = data.filter((item) => {
+                let total_marks = parseFloat(item.total_marks);
+                let earned_marks = parseFloat(item.earned_marks);
+                return earned_marks / total_marks >= 0.8;
+              }).length;
+              let failCount = data.filter((item) => {
+                let total_marks = parseFloat(item.total_marks);
+                let earned_marks = parseFloat(item.earned_marks);
+
+                return earned_marks / total_marks < 0.8;
+              }).length;
+              console.log(passCount);
+              PieChartCourseResult(passCount, failCount);
+            } else {
+              alert("No data");
+              PieChartCourseResult(0, 0);
+            }
+          })
+          .catch((error) => console.error("Error fetching data:", error));
+      }
+      //
+      //=========Show pie-chart result=============
+      function PieChartCourseResult(pass, fail) {
+        $(() => {
+          $("#pie").dxPieChart({
+            size: {
+              width: 500,
+            },
+            palette: "bright",
+            dataSource: [
+              { title: "Pass", data: pass },
+              { title: "Fail", data: fail },
+            ],
+            series: [
+              {
+                argumentField: "title",
+                valueField: "data",
+                label: {
+                  visible: true,
+                  connector: {
+                    visible: true,
+                    width: 1,
+                  },
+                },
+              },
+            ],
+            title: "PASSING RATE",
+            export: {
+              enabled: true,
+            },
+            onPointClick(e) {
+              const point = e.target;
+
+              toggleVisibility(point);
+            },
+            onLegendClick(e) {
+              const arg = e.target;
+
+              toggleVisibility(this.getAllSeries()[0].getPointsByArg(arg)[0]);
+            },
+          });
+
+          function toggleVisibility(item) {
+            if (item.isVisible()) {
+              item.hide();
+            } else {
+              item.show();
+            }
+          }
+        });
+      }
     </script>
+    <!-- =================== -->
   </body>
 </html>
